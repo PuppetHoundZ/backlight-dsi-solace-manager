@@ -19,7 +19,7 @@ The script targets the physical geometry of official Raspberry Pi DSI touch pane
 
 ### Install:
 ```bash
-mkdir -p ~/.local/share/backlight-dsi-solace && nano ~/.local/share/backlight-dsi-solace/backlight-dsi-solace-manager.sh && chmod +x ~/.local/share/backlight-dsi-solace/backlight-dsi-solace-manager.sh && ~/.local/share/backlight-dsi-solace/backlight-dsi-solace-manager.sh
+chmod +x ~/backlight-dsi-solace-manager.sh && ~/backlight-dsi-solace-manager.sh
 
 ```
 

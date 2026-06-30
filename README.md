@@ -1,38 +1,70 @@
-# Backlight DSI Solace — Manager & Screen Saver.
+# Backlight DSI Solace
 
-An opt-in, long-running background idle-dim manager and touchscreen utility designed specifically for the official Raspberry Pi 7" DSI touchscreen panel. It implements an intelligent screensaver workflow under the Wayland protocol, fading screen brightness dynamically during periods of inactivity and waking seamlessly on the initial touch event.
+An idle-dim screensaver for the official Raspberry Pi DSI touch displays. Runs entirely in **user space** — no sudo after the initial dependency install, no systemd services, no compositor config changes, nothing system-wide.
 
-This tool acts completely in user space: it is **never** deployed as a systemd service, **never** alters audio/PipeWire endpoints automatically, and **never** forces autostart configurations unless explicitly toggled on by the user.
+## Why this exists
+
+The Raspberry Pi Control Center's built-in screen blanking is unreliable on touch displays — it blanks once, then fails to blank again on subsequent idle periods. There's also no way to adjust the timeout from the Control Center UI. Backlight DSI Solace was built to fix both problems with a dedicated, user-space tool made specifically for DSI panels.
+
+## What it does
+
+After a configurable number of seconds with no touch/mouse/keyboard activity, the backlight fades smoothly to zero (screen stays powered — no flicker on wake). The next tap fades it back up to whatever brightness you had set. That's it.
+
+## Features
+
+- **Smooth fade in/out** — configurable fade duration, not an instant on/off
+- **Adjustable idle timeout** — set however long you want before it dims
+- **GTK3 control panel** — gear icon opens a settings UI; no command line needed for day-to-day use
+- **Brightness slider (4–100%)** — floor set at 4% because 1–3% reads as fully black on the official 7" panel
+- **Four safety layers against getting stuck dimmed:**
+  1. Tapping the screen during a dim always wakes it
+  2. Resume signal from the idle daemon always wakes it
+  3. Stopping the app from the panel force-restores brightness
+  4. A boot guard checks for and corrects a 0% brightness left over from a power loss while dimmed
+- **Optional autostart** — off by default; toggle it on from the panel if you want it running every boot
+- **HDMI audio re-detect shortcut** — one-tap WirePlumber restart for when HDMI audio devices don't get picked up after a display change
+- **Optional logging** — off by default (keeps SD card writes minimal); flip on from settings if you need to troubleshoot
+- **Clean uninstall** — removes all configs, caches, and binaries from your user directories; shared system packages are never removed
+
+## Requirements
+
+- Raspberry Pi OS Trixie (Debian 13) with the **labwc** Wayland compositor — this is what the script is built and tested against
+- An official Raspberry Pi DSI touch display — the script auto-detects the DSI backlight device and has been confirmed against the official panel specifically. It may work with other DSI panels, but that's untested
+- Uses `swayidle` + `ext-idle-notify-v1` for idle detection (not X11, not evdev) — installed automatically as a dependency
+
+## Install
+
+Download the single `.sh` file and run it:
+
+```bash
+chmod +x backlight-dsi-solace-manager.sh
+./backlight-dsi-solace-manager.sh
+```
+
+Choose **Install / Repair** from the menu. It installs dependencies via `apt`, writes the watcher and GUI scripts to `~/.local/share/`, optionally creates a desktop shortcut, and installs the boot guard.
+
+## Using it
+
+1. Launch the control panel (desktop shortcut, or the gear icon from the manager menu)
+2. Set your idle timeout and fade duration
+3. Adjust the brightness slider to your preferred level
+4. Optionally enable autostart if you want it running on every boot
+5. Tap **Stop** any time you don't want the screen dimming — for movies, games, anything — then **Start** again with one tap when you're done
+
+## Uninstalling
+
+Run the script again and choose **Uninstall** from the menu. This removes the watcher/GUI scripts, configs, logs, and desktop shortcuts under your user account. Dependencies installed via `apt` (e.g. `swayidle`, GTK3 bindings) are left in place since they may be shared by other software — the script never removes system packages.
+
+## Known limitations
+
+- No gamepad-driven idle reset — this is an upstream `swayidle` limitation, not a bug in this script
+- No automatic HDMI hotplug watcher — audio re-detection is a manual one-tap action, by design, to avoid unexpected WirePlumber restarts
+- Built and confirmed on Pi OS Trixie / labwc; other compositors (e.g. X11-based desktops, older Bookworm setups) are untested
+
+## Compatibility notes
+
+Confirmed working: Raspberry Pi 4, official 7" DSI touch display, Pi OS Trixie, labwc compositor. If you try it on a different setup, feedback on what works (or doesn't) is welcome.
 
 ---
 
-## 📐 Display Architecture & Layout Topology
-
-When the idle timer expires, the screen state transitions through a strict sequence to eliminate hardware backlight race conditions and visually jarring flickering. 
-
-### Transition Workflow Sequences
-1. **Dim Order Sequence:** Backlight fades smoothly to `0` **FIRST** $\rightarrow$ Fullscreen black blocking overlay layer renders **AFTER**.
-2. **Wake Order Sequence:** Fullscreen black blocking overlay hides **FIRST** $\rightarrow$ Backlight fades smoothly back up to its cached pre-dim value **AFTER**.
-
-### Screen Dimension Layer Mapping
-The script targets the physical geometry of official Raspberry Pi DSI touch panels via a static allowlist (e.g., $800\times480$ or $1280\times720$) coupled with physical millimetric fallbacks to correctly bind the overlay context to the touch layer when multi-monitor HDMI connections are present.
-
-### Install:
-```bash
-chmod +x ~/backlight-dsi-solace-manager.sh && ~/backlight-dsi-solace-manager.sh
-
-```
-
-### What this command does:
-
-1. **`mkdir -p ...`**: Creates the internal application directory (`~/.local/share/backlight-dsi-solace`) to match the script's strict `INSTALL_DIR` internal paths.
-2. **`nano ...`**: Opens a blank terminal text editor at the correct target file location (`backlight-dsi-solace-manager.sh`). **Paste your script code here, then press `Ctrl+O` to save and `Ctrl+X` to exit.**
-3. **`chmod +x ...`**: Grants execution permissions to the manager utility.
-4. **`~/.local/...`**: Automatically launches the interactive setup menu, allowing you to run the dependency check and toggle your autostart configurations.
-
-##  References:
-* **Official 7" Touch Display Product Brief PDF:** `datasheets.raspberrypi.com/display/7-inch-display-product-brief.pdf`
-* **Official Touch Display 2 Documentation:** `raspberrypi.com/documentation/accessories/touch-display-2.html`
-* **Official Raspberry Pi News Announcement (5" variant):** `raspberrypi.com/news/a-new-5-variant-of-raspberry-pi-touch-display-2/`
-* **Raspberry Pi Engineering Forums Discussion (Landscape Configuration):** `forums.raspberrypi.com/viewtopic.php?t=379738`
-* **Swayidle Upstream Gamepad Limitation Thread:** `github.com/swaywm/swayidle/issues/68`
+Questions or issues are welcome — open an issue on this repo or reply on the [Raspberry Pi Forums thread](https://forums.raspberrypi.com/) where this was originally shared.

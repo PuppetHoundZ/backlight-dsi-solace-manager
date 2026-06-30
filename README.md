@@ -67,4 +67,4 @@ Confirmed working: Raspberry Pi 4, official 7" DSI touch display, Pi OS Trixie, 
 
 ---
 
-Questions or issues are welcome — open an issue on this repo or reply on the [Raspberry Pi Forums thread](https://forums.raspberrypi.com/) where this was originally shared.
+Questions or issues are welcome — open an issue on this repo or reply on the [Raspberry Pi Forums thread](https://forums.raspberrypi.com/viewtopic.php?t=399149) where this was originally shared.
